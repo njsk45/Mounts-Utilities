@@ -1,0 +1,31 @@
+{
+    "format_version": "1.12",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "arzz_ut:purple_orb"
+        },
+        "tags": [
+            "crafting_table"
+        ],
+        "pattern": [
+            "NNN",
+            "IEI",
+            "III"
+        ],
+        "key": {
+            "N": {
+                "item": "minecraft:netherack"
+            },
+            "E": {
+                "item": "minecraft:end_crystal"
+            },
+            "I": {
+                "item": "minecraft:iron_ingot"
+            }
+        },
+        "result": {
+            "item": "arzz_ut:purple_orb",
+            "count": 1
+        }
+    }
+}

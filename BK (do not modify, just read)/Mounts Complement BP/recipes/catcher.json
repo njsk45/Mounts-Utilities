@@ -1,0 +1,31 @@
+{
+	"format_version": "1.12",
+	"minecraft:recipe_shaped": {
+		"description": {
+			"identifier": "mounts_catcher:catcher"
+		},
+		"tags": [
+			"crafting_table"
+		],
+		"pattern": [
+			"NNN",
+			"IEI",
+			"III"
+		],
+		"key": {
+			"N": {
+				"item": "minecraft:netherite_scrap"
+			},
+			"E": {
+				"item": "minecraft:end_crystal"
+			},
+			"I": {
+				"item": "minecraft:iron_ingot"
+			}
+		},
+		"result": {
+			"item": "mounts_catcher:catcher",
+			"count": 1
+		}
+	}
+}

@@ -1,0 +1,1593 @@
+import { world, system, Player, Container, ItemStack } from '@minecraft/server';
+import { ActionFormData, ModalFormData, MessageFormData } from '@minecraft/server-ui';
+import './ghast_handler';
+import './mobs_taming';
+
+
+// --- CONFIGURACIÓN ---
+const LANGUAGE = "en"; // Cambia a "en" para inglés o "es" para español
+
+const CATCHER_ID = "mounts_catcher:catcher";
+const MAX_INVENTORY = 4;
+const MAX_STORAGE = 6;
+const MAX_HEALTH = 250;
+const ALLOWED_ENTITIES = [
+    'minecraft:horse',
+    'minecraft:donkey',
+    'minecraft:zombie_horse',
+    'minecraft:skeleton_horse',
+    'minecraft:mule',
+    'minecraft:camel',
+    'minecraft:camel_husk',
+    'minecraft:nautilus',
+    'minecraft:happy_ghast',
+    'minecraft:strider',
+    'minecraft:pig'
+];
+
+// --- TRADUCCIONES ---
+const TRANSLATIONS = {
+    en: {
+        capture_fail_blocked: "§cYou cannot capture that mob.",
+        capture_fail_no_health: "§cThis mob cannot be captured.",
+        capture_fail_too_much_health: "§cThat mob has too much health!",
+        capture_fail_no_durability: "§cThe catcher does not have enough durability!",
+        capture_fail_full: "§cYour Catcher inventory is full (4/4)!",
+        capture_success: "%s has been captured! (%s/%s)",
+        release_fail_empty: "The catcher is empty!",
+        release_success: "%s has been released!",
+        lore_line1: "- %s/%s mobs (Inventory)",
+        lore_line2: "Click on a mob to capture",
+        lore_line3: "Click on a block to release",
+        form_title: "[ Captured Mobs ]",
+        form_body: "Inventory: %s/%s",
+        lang_select_title: "Select Language / Seleccionar idioma",
+        lang_select_body: "Choose your language / Elige tu idioma",
+        lang_option_en: "English",
+        lang_option_es: "Español",
+        lang_set_en: "Language set to English.",
+        lang_set_es: "Idioma configurado a Español.",
+        capture_fail_crowded: "§cThere's a lot of mobs so close, you can't use the catcher here",
+        capture_fail_no_saddle: "§cYou need a saddle to capture this mob.",
+        capture_fail_no_harness: "§cYou need a harness to capture this mob.",
+        release_fail_riding: "§cTo release a mount, you must get off saddle.",
+        settings_title: "Settings",
+        settings_body: "Configure addon settings.",
+        setting_auto_ride_on: "Auto-Ride: §aON",
+        setting_auto_ride_off: "Auto-Ride: §cOFF",
+        setting_parameters: "Parameters",
+        parameters_title: "Parameters",
+        parameters_body: "Configure addon parameters.",
+        setting_language: "Language",
+        setting_manage_mobs: "Manage Mobs",
+        setting_storage: "Storage",
+        capture_fail_not_owner: "§cThis mob belongs to another player!",
+        manage_title: "Manage Mobs (Inventory)",
+        manage_body: "Select a mob to manage.",
+        storage_title: "Storage (Passive)",
+        storage_body: "Stored Mobs: %s/%s",
+        mob_details_title: "Mob Details",
+        mob_details_body: "Name: %s\nHP: %s\nOwner: %s",
+        btn_tame_self: "Tame (Cost: 20 Slices)",
+        btn_gift: "Gift (Cost: 20 Slices)",
+        btn_send_storage: "Send to Storage",
+        btn_retrieve: "Retrieve from Storage",
+        btn_back: "Back",
+        tame_success: "§aMob tamed successfully!",
+        tame_fail_cost: "§cYou need 20 Glistering Melon Slices!",
+        gift_title: "Gift Mob",
+        gift_body: "Select a player to gift this mob to.",
+        gift_sent: "§aGift request sent to %s!",
+        gift_received_title: "Gift Received",
+        gift_received_body: "%s wants to gift you a %s.\nDo you accept?",
+        gift_accepted_sender: "§a%s accepted your gift!",
+        gift_accepted_recipient: "§aYou accepted the gift!",
+        gift_denied_sender: "§c%s denied your gift. 20 slices refunded.",
+        gift_denied_recipient: "§cYou denied the gift.",
+        gift_fail_storage_full: "§cCannot send gift. Recipient's storage is full!",
+        storage_full: "§cStorage is full!",
+        inventory_full: "§cInventory is full!",
+        move_success: "§aMob moved successfully!",
+        owner_none: "None",
+        owner_self: "You",
+        trust_success: "§aPlayer added to trust list!",
+        trust_removed: "§aPlayer removed from trust list!",
+        trust_fail_cost: "§cYou need 128 Glistering Melon Slices!",
+        trust_fail_exists: "§cPlayer is already trusted!",
+        ride_fail_not_trusted: "§cYou are not trusted to ride this mount!",
+        capture_fail_no_carpet: "§cYou need a carpet to capture this mob.",
+        trust_invite_sent: "§aTrust invitation sent to %s",
+        trust_invite_title: "Trust Invitation",
+        trust_invite_body: "§l§c%s §r§awants to add you to their trust list.\nThis will also add them to YOUR list.\nDo you accept?",
+        trust_accepted_sender: "§a%s accepted your trust invitation!",
+        trust_accepted_recipient: "§aYou now trust %s!",
+        trust_denied_sender: "§c%s denied your invitation. 128 slices refunded.",
+        trust_denied_recipient: "§cYou denied the invitation.",
+        setting_manage_trust: "Social",
+        trust_title: "Social Menu",
+        trust_body: "Options available:",
+        trust_add: "Add Trusted Player",
+        gift_invite_title: "Gift Received",
+        gift_invite_body: "%s wants to gift you a %s.\nDo you accept?",
+        gift_accepted_sender: "§a%s accepted your gift!",
+        gift_accepted_recipient: "§aYou accepted the gift!",
+        gift_denied_sender: "§c%s denied your gift. 20 slices refunded.",
+        gift_denied_recipient: "§cYou denied the gift.",
+        owner_entrusted: "Entrusted",
+        trust_remove_btn: "Remove Trusted Player",
+        trust_remove_confirm_title: "Remove Trust?",
+        trust_remove_confirm_body: "Are you sure you want to remove %s from your trust list?",
+        trust_remove_fail_mobs: "§cCannot remove trust! Both players must return each other's mobs first.",
+        btn_give_back: "Give Back",
+        invitations_btn: "§aYou have §c§l[%s]§r§a Social Notifications, check your §dMount Orb"
+    },
+    es: {
+        capture_fail_blocked: "§cNo puedes capturar ese mob.",
+        capture_fail_no_health: "§cNo se puede capturar este mob.",
+        capture_fail_too_much_health: "§c¡Ese mob tiene demasiada vida!",
+        capture_fail_no_durability: "§c¡La red no tiene suficiente durabilidad!",
+        capture_fail_full: "§c¡Tu inventario de Catcher está lleno (4/4)!",
+        capture_success: "§a¡%s ha sido capturado! (%s/%s)",
+        release_fail_empty: "¡El catcher está vacío!",
+        release_success: "¡%s ha sido liberado!",
+        lore_line1: "- %s/%s mobs (Inventario)",
+        lore_line2: "Haz clic en un mob para capturar",
+        lore_line3: "Haz clic en un bloque para liberar",
+        form_title: "[ Mobs Capturados ]",
+        form_body: "Inventario: %s/%s",
+        lang_select_title: "Select Language / Seleccionar idioma",
+        lang_select_body: "Choose your language / Elige tu idioma",
+        lang_option_en: "English",
+        lang_option_es: "Español",
+        lang_set_en: "Language set to English.",
+        lang_set_es: "Idioma configurado a Español.",
+        capture_fail_crowded: "§cHay muchos mobs cerca, no puedes usar el catcher aquí",
+        capture_fail_no_saddle: "§cNecesitas una montura para capturar este mob.",
+        capture_fail_no_harness: "§cNecesitas un arnés para capturar este mob.",
+        release_fail_riding: "§cPara liberar una montura, debes bajarte de la silla.",
+        settings_title: "Configuración",
+        settings_body: "Configura las opciones del addon.",
+        setting_auto_ride_on: "Auto-Montar: §aON",
+        setting_auto_ride_off: "Auto-Montar: §cOFF",
+        setting_parameters: "Parámetros",
+        parameters_title: "Parámetros",
+        parameters_body: "Configura los parámetros del addon.",
+        setting_language: "Idioma",
+        setting_manage_mobs: "Administrar Mobs",
+        setting_storage: "Almacenamiento",
+        capture_fail_not_owner: "§c¡Este mob pertenece a otro jugador!",
+        manage_title: "Administrar Mobs (Inventario)",
+        manage_body: "Selecciona un mob para administrar.",
+        storage_title: "Almacenamiento (Pasivo)",
+        storage_body: "Mobs Almacenados: %s/%s",
+        mob_details_title: "Detalles del Mob",
+        mob_details_body: "Nombre: %s\nHP: %s\nDueño: %s",
+        btn_tame_self: "Domesticar (Costo: 20 Rodajas)",
+        btn_gift: "Regalar (Costo: 20 Rodajas)",
+        btn_send_storage: "Enviar al Almacén",
+        btn_retrieve: "Recuperar del Almacén",
+        btn_back: "Volver",
+        tame_success: "§a¡Mob domesticado con éxito!",
+        tame_fail_cost: "§c¡Necesitas 20 Rodajas de Sandía Reluciente!",
+        gift_title: "Regalar Mob",
+        gift_body: "Selecciona un jugador para regalar este mob.",
+        gift_sent: "§a¡Solicitud de regalo enviada a %s!",
+        gift_received_title: "Regalo Recibido",
+        gift_received_body: "%s quiere regalarte un %s.\n¿Aceptas?",
+        gift_accepted_sender: "§a¡%s aceptó tu regalo!",
+        gift_accepted_recipient: "§a¡Aceptaste el regalo!",
+        gift_denied_sender: "§c%s rechazó tu regalo. 20 rodajas devueltas.",
+        gift_denied_recipient: "§cRechazaste el regalo.",
+        gift_fail_storage_full: "§cNo se puede enviar. ¡El almacén del destinatario está lleno!",
+        storage_full: "§c¡El almacén está lleno!",
+        inventory_full: "§c¡El inventario está lleno!",
+        move_success: "§a¡Mob movido con éxito!",
+        owner_none: "Ninguno",
+        owner_self: "Tú",
+        trust_success: "§a¡Jugador añadido a la lista social!",
+        trust_removed: "§a¡Jugador eliminado de la lista social!",
+        trust_fail_cost: "§c¡Necesitas 128 Rodajas de Sandía Reluciente!",
+        trust_fail_exists: "§c¡El jugador ya está en la lista!",
+        ride_fail_not_trusted: "§c¡No tienes confianza para montar este mob!",
+        capture_fail_no_carpet: "§cNecesitas una alfombra para capturar este mob.",
+        trust_invite_sent: "§aSolicitud social enviada a %s",
+        trust_invite_title: "Solicitud Social",
+        trust_invite_body: "§l%s §r§aquiere añadirte a su lista social.\nEsto también lo añadirá a TU lista.\n¿Aceptas?",
+        trust_accepted_sender: "§a¡%s aceptó tu solicitud social!",
+        trust_accepted_recipient: "§a¡Ahora confías en %s!",
+        trust_denied_sender: "§c%s rechazó tu solicitud. 128 rodajas devueltas.",
+        trust_denied_recipient: "§cRechazaste la solicitud.",
+        setting_manage_trust: "Social",
+        trust_title: "Menú Social",
+        trust_body: "Opciones disponibles:",
+        trust_add: "Añadir Jugador de Confianza",
+        gift_invite_title: "Regalo Recibido",
+        gift_invite_body: "%s quiere regalarte un %s.\n¿Aceptas?",
+        gift_accepted_sender: "§a¡%s aceptó tu regalo!",
+        gift_accepted_recipient: "§a¡Aceptaste el regalo!",
+        gift_denied_sender: "§c%s rechazó tu regalo. 20 rodajas devueltas.",
+        gift_denied_recipient: "§cRechazaste el regalo.",
+        owner_entrusted: "Confiado",
+        trust_remove_btn: "Eliminar Jugador de Confianza",
+        trust_remove_confirm_title: "¿Eliminar Confianza?",
+        trust_remove_confirm_body: "¿Estás seguro de que quieres eliminar a %s de tu lista de confianza?",
+        trust_remove_fail_mobs: "§c¡No se puede eliminar! Ambos jugadores deben devolverse sus mobs primero.",
+        btn_give_back: "Devolver",
+        invitations_btn: "§aTienes §c§l[%s]§r§a notificaciones, revisa tu §dMount Orb"
+    }
+};
+
+system.runTimeout(() => {
+    for (const player of world.getPlayers()) {
+        player.playSound("block.anvil.land", { pitch: 1.0, volume: 2.0 });
+        world.spawnParticle("minecraft:totem_particle", player.location);
+    }
+}, 20);
+
+// --- DATA MANAGEMENT ---
+const TRUST_REGISTRY_KEY = 'mount_trust_registry';
+const playerLanguages = new Map();
+const playerAutoRide = new Map();
+const pendingGifts = new Map();
+const PENDING_DATA_KEY = 'mount_pending_data';
+
+function getPendingData() {
+    const data = world.getDynamicProperty(PENDING_DATA_KEY);
+    return data ? JSON.parse(data) : {};
+}
+
+function savePendingData(data) {
+    world.setDynamicProperty(PENDING_DATA_KEY, JSON.stringify(data));
+}
+
+function getPlayerPendingData(playerId) {
+    const data = getPendingData();
+    if (!data[playerId]) {
+        data[playerId] = { gifts: [], breaks: [] };
+    }
+    return data[playerId];
+}
+
+function savePlayerPendingData(playerId, playerData) {
+    const data = getPendingData();
+    data[playerId] = playerData;
+    savePendingData(data);
+}
+
+function addPendingGift(targetId, gift) {
+    const data = getPendingData();
+    if (!data[targetId]) data[targetId] = { gifts: [], breaks: [] };
+    data[targetId].gifts.push(gift);
+    savePendingData(data);
+}
+
+function addPendingBreak(targetId, breakerId) {
+    const data = getPendingData();
+    if (!data[targetId]) data[targetId] = { gifts: [], breaks: [] };
+    if (!data[targetId].breaks.includes(breakerId)) {
+        data[targetId].breaks.push(breakerId);
+        savePendingData(data);
+    }
+}
+
+function getTrustRegistry() {
+    const data = world.getDynamicProperty(TRUST_REGISTRY_KEY);
+    return data ? JSON.parse(data) : {};
+}
+
+function saveTrustRegistry(registry) {
+    world.setDynamicProperty(TRUST_REGISTRY_KEY, JSON.stringify(registry));
+}
+
+function getTrusted(ownerId) {
+    const registry = getTrustRegistry();
+    return registry[ownerId] || [];
+}
+
+function addTrusted(ownerId, trustedId) {
+    const registry = getTrustRegistry();
+    if (!registry[ownerId]) registry[ownerId] = [];
+    if (!registry[ownerId].includes(trustedId)) {
+        registry[ownerId].push(trustedId);
+        saveTrustRegistry(registry);
+        return true;
+    }
+    return false;
+}
+
+function removeTrusted(ownerId, trustedId) {
+    const registry = getTrustRegistry();
+    if (registry[ownerId]) {
+        const index = registry[ownerId].indexOf(trustedId);
+        if (index > -1) {
+            registry[ownerId].splice(index, 1);
+            saveTrustRegistry(registry);
+            return true;
+        }
+    }
+    return false;
+}
+
+function isTrusted(ownerId, playerId) {
+    if (ownerId === playerId) return true;
+    const trusted = getTrusted(ownerId);
+    return trusted.includes(playerId);
+}
+
+function getMobs(player, type) {
+    // type: 'mount_inventory' or 'mount_storage'
+    const data = player.getDynamicProperty(type);
+    return data ? JSON.parse(data) : [];
+}
+
+function getPlayerLanguage(player) {
+    return playerLanguages.get(player.id) || LANGUAGE;
+}
+
+function translateForPlayer(player, key, ...params) {
+    const lang = getPlayerLanguage(player);
+    let text = TRANSLATIONS[lang][key] || key;
+    params.forEach(param => {
+        text = text.replace(/%s/, param);
+    });
+    return text;
+}
+
+function saveMobs(player, type, data) {
+    player.setDynamicProperty(type, JSON.stringify(data));
+}
+
+
+
+function releaseAutoMob(player) {
+    // Exclusive function for Auto Catcher
+    const inventory = getMobs(player, 'mount_inventory');
+    if (inventory.length === 0) {
+        return false;
+    }
+
+    if (inventory.length > 1) {
+        openAutoMobsMenu(player);
+        return true;
+    }
+
+    system.run(() => {
+        const currentInv = getMobs(player, 'mount_inventory');
+        if (currentInv.length === 0) return;
+        const currentMob = currentInv[0];
+
+        // Remove from inventory
+        currentInv.shift();
+        saveMobs(player, 'mount_inventory', currentInv);
+
+        // Spawn at player location with FORCE RIDE
+
+        spawnMob(player, currentMob, player.location, true);
+
+        // Cooldown
+        player.startItemCooldown("catcher_cooldown", 20);
+    });
+    return true;
+}
+
+function captureAutoMob(player, entity, item) {
+    // Exclusive capture logic for Auto Catcher
+
+    // (Mostly identical to regular capture, but separated as requested)
+
+    if (!ALLOWED_ENTITIES.includes(entity.typeId)) {
+        player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_blocked"));
+        player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+        player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+        return;
+    }
+
+    // Check ownership
+    let ownerId = null;
+    try {
+        const owner = entity.getComponent("minecraft:tameable")?.owner; // or ownerId property if available
+        // Bedrock scripting API for owner is tricky. 
+        // Let's assume we check if it's tamed and if player is owner.
+        // For now, using the same logic as original:
+        // (Original logic didn't explicitly check owner ID match for capture, just relied on Tameable component existence/state?)
+        // Actually, original logic had: `const ownerId = entity.getComponent("minecraft:tameable")?.owner?.id;`
+        // And `if (ownerId && ownerId !== player.id) ...`
+
+        const tameable = entity.getComponent("minecraft:tameable");
+        if (tameable && tameable.owner && tameable.owner.id !== player.id) {
+            player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_not_owner"));
+            player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+            return;
+        }
+        if (tameable && tameable.owner) {
+            ownerId = tameable.owner.id;
+        }
+    } catch (e) { }
+
+    // Check Saddle/Harness/Carpet
+    if (entity.typeId === 'minecraft:happy_ghast') {
+        if (!entity.hasTag("harness")) {
+            player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_no_harness"));
+            player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+            player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+            return;
+        }
+    } else {
+        const isSaddled = entity.getComponent('minecraft:is_saddled');
+        const equippable = entity.getComponent('minecraft:equippable');
+        const saddleItem = equippable ? equippable.getEquipment('Saddle') : null;
+        let hasSaddle = false;
+        if (isSaddled) hasSaddle = true;
+        if (saddleItem) hasSaddle = true;
+        if (entity.getComponent('minecraft:is_saddled')) hasSaddle = true;
+
+        if (entity.typeId !== 'minecraft:nautilus' && !hasSaddle) {
+            player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_no_saddle"));
+            player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+            player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+            return;
+        }
+    }
+
+    // For now, let's implement the core capture:
+
+    const health = entity.getComponent("minecraft:health");
+    if (!health) return;
+
+    const currentInv = getMobs(player, 'mount_inventory');
+    if (currentInv.length >= MAX_INVENTORY) {
+        player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_full"));
+        player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+        return;
+    }
+
+    const structureName = `capture_${player.name}_${Date.now()}`;
+    player.runCommand(`particle minecraft:trial_spawner_detection ${entity.location.x} ${entity.location.y} ${entity.location.z}`);
+    player.playSound("beacon.deactivate", { pitch: 2, volume: 1.0 });
+    player.runCommand(`structure save "${structureName}" ${entity.location.x} ${entity.location.y} ${entity.location.z} ${entity.location.x} ${entity.location.y} ${entity.location.z} true disk false`);
+
+    const customName = entity.nameTag?.trim() || null;
+
+    currentInv.push({
+        structureName,
+        entityType: entity.typeId,
+        entityName: entity.typeId.split(":")[1],
+        health: health.currentValue,
+        customName,
+        ownerId: ownerId
+    });
+    saveMobs(player, 'mount_inventory', currentInv);
+
+    player.startItemCooldown("catcher_cooldown", 20);
+
+    const mobName = getFriendlyName(entity);
+
+    entity.remove();
+}
+
+
+
+// --- FUNCIONES AUXILIARES ---
+function toFriendlyName(str) {
+    return str.replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+function getFriendlyName(entity) {
+    const customName = entity.nameTag?.trim();
+    if (customName && customName.length > 0) {
+        return customName;
+    }
+    let id = entity.typeId || "unknown:entity";
+    if (id.includes(':')) {
+        id = id.split(':')[1];
+    }
+    return toFriendlyName(id);
+}
+function getNameFromCaptured(mob) {
+    if (mob.customName && mob.customName.length > 0) {
+        return mob.customName;
+    }
+    return toFriendlyName(mob.entityName || "unknown");
+}
+function getCatcherSlots(container) {
+    const catchers = [];
+    for (let i = 0; i < inv.size; i++) {
+        const item = inv.getItem(i);
+        if (item && item.typeId === CATCHER_ID) {
+            catchers.push({ item, slot: i });
+        }
+    }
+    return catchers;
+}
+function updateCatcherLore(item, player) {
+    const inventory = getMobs(player, 'mount_inventory');
+    const lang = getPlayerLanguage(player);
+    item.setLore([
+        `§a${TRANSLATIONS[lang].lore_line1.replace("%s", inventory.length).replace("%s", MAX_INVENTORY)}`,
+        `§7${TRANSLATIONS[lang].lore_line2}`,
+        `§7${TRANSLATIONS[lang].lore_line3}`
+    ]);
+
+
+}
+
+function isPlayerRiding(player) {
+    const dimension = player.dimension;
+    const nearbyEntities = dimension.getEntities({
+        location: player.location,
+        maxDistance: 6.0,
+    });
+
+    for (const entity of nearbyEntities) {
+        const rideable = entity.getComponent("minecraft:rideable");
+        if (rideable) {
+            const riders = rideable.getRiders();
+            for (const rider of riders) {
+                if (rider.id === player.id) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+function consumeMelonSlices(player, amount) {
+    if (player.getGameMode() === 'creative') return true;
+
+    const inv = player.getComponent("minecraft:inventory").container;
+    let total = 0;
+    for (let i = 0; i < inv.size; i++) {
+        const item = inv.getItem(i);
+        if (item && item.typeId === 'minecraft:glistering_melon_slice') {
+            total += item.amount;
+        }
+    }
+
+    if (total < amount) return false;
+
+    let remaining = amount;
+    for (let i = 0; i < inv.size; i++) {
+        if (remaining <= 0) break;
+        const item = inv.getItem(i);
+        if (item && item.typeId === 'minecraft:glistering_melon_slice') {
+            if (item.amount > remaining) {
+                item.amount -= remaining;
+                inv.setItem(i, item);
+                remaining = 0;
+            } else {
+                remaining -= item.amount;
+                inv.setItem(i, undefined);
+            }
+        }
+    }
+    return true;
+}
+
+function refundMelonSlices(player, amount) {
+    const inv = player.getComponent("minecraft:inventory").container;
+    const itemStack = new ItemStack("minecraft:glistering_melon_slice", amount);
+    inv.addItem(itemStack);
+}
+
+// --- ACTUALIZA EL LORE CADA SEGUNDO ---
+system.runInterval(() => {
+    for (const player of world.getPlayers()) {
+        const inv = player.getComponent("minecraft:inventory").container;
+        for (const { item, slot } of getCatcherSlots(inv)) {
+            updateCatcherLore(item, player);
+            inv.setItem(slot, item);
+        }
+    }
+}, 20);
+
+world.afterEvents.playerSpawn.subscribe(ev => {
+    const { player, initialSpawn } = ev;
+    if (initialSpawn) {
+        checkPendingActions(player);
+    }
+});
+
+function checkPendingActions(player) {
+    const data = getPlayerPendingData(player.id);
+
+    // Handle Breaks (Force Return)
+    if (data.breaks && data.breaks.length > 0) {
+        data.breaks.forEach(breakerId => {
+            returnOwnedMobs(player, breakerId);
+        });
+        // Clear breaks after processing
+        data.breaks = [];
+        savePlayerPendingData(player.id, data);
+    }
+
+    // Handle Gifts/Invites Notification
+    if (data.gifts && data.gifts.length > 0) {
+        player.sendMessage(translateForPlayer(player, "invitations_btn").replace("%s", data.gifts.length));
+        player.playSound("random.orb", 1, 1);
+    }
+}
+
+function returnOwnedMobs(player, targetOwnerId) {
+    const inventory = getMobs(player, 'mount_inventory');
+    const storage = getMobs(player, 'mount_storage');
+    let returnedCount = 0;
+
+    // Check Inventory
+    for (let i = inventory.length - 1; i >= 0; i--) {
+        if (inventory[i].ownerId === targetOwnerId) {
+            const mob = inventory[i];
+            inventory.splice(i, 1);
+            addPendingGift(targetOwnerId, {
+                type: 'gift',
+                senderId: player.id,
+                senderName: player.name,
+                mob: mob,
+                cost: 0 // Free return
+            });
+            returnedCount++;
+        }
+    }
+
+    // Check Storage
+    for (let i = storage.length - 1; i >= 0; i--) {
+        if (storage[i].ownerId === targetOwnerId) {
+            const mob = storage[i];
+            storage.splice(i, 1);
+            addPendingGift(targetOwnerId, {
+                type: 'gift',
+                senderId: player.id,
+                senderName: player.name,
+                mob: mob,
+                cost: 0 // Free return
+            });
+            returnedCount++;
+        }
+    }
+
+    if (returnedCount > 0) {
+        saveMobs(player, 'mount_inventory', inventory);
+        saveMobs(player, 'mount_storage', storage);
+        player.sendMessage(`§eReturned ${returnedCount} mobs to their owner (Trust Removed).`);
+    }
+}
+
+// --- CAPTURAR MOB ---
+world.beforeEvents.playerInteractWithEntity.subscribe(ev => {
+    const { player, itemStack, target: entity } = ev;
+
+    if (!itemStack) return;
+
+    // Debug Log
+    //player.sendMessage(`Interact with Entity: ${entity.typeId}, Item: ${itemStack.typeId}`);
+
+    if (itemStack.typeId !== CATCHER_ID) {
+        // player.sendMessage(`Item ID mismatch: Expected ${CATCHER_ID}, Got ${itemStack.typeId}`);
+        return;
+    }
+
+
+
+
+    if (player.getItemCooldown("catcher_cooldown") > 0) {
+        ev.cancel = true;
+        return;
+    }
+
+    if (player['last_interact_tick'] === system.currentTick) {
+        ev.cancel = true;
+        return;
+    }
+    player['last_interact_tick'] = system.currentTick;
+
+    if (player.capture_lock) {
+        ev.cancel = true;
+        return;
+    }
+    player.capture_lock = true;
+
+    ev.cancel = true;
+    system.run(() => {
+        try {
+            const inv = player.getComponent("minecraft:inventory").container;
+            const item = inv.getItem(player.selectedSlotIndex);
+            if (!item || item.typeId !== CATCHER_ID) {
+                return;
+            }
+
+            const dimension = entity.dimension;
+            // Check if entity is still valid
+            if (!entity.isValid()) {
+                return;
+            }
+
+            const nearbyEntities = dimension.getEntities({
+                location: entity.location,
+                maxDistance: 2.0
+            });
+            const nearbyAllowed = nearbyEntities.filter(e => ALLOWED_ENTITIES.includes(e.typeId));
+
+            if (nearbyAllowed.length > 1) {
+                player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_crowded"));
+                player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                return;
+            }
+
+            if (!ALLOWED_ENTITIES.includes(entity.typeId)) {
+                player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_blocked"));
+                player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                return;
+            }
+
+            const mountOwner = entity.getDynamicProperty('mount_owner');
+            const tameable = entity.getComponent("minecraft:tameable");
+
+            let ownerId = mountOwner;
+            if (!ownerId && tameable) {
+                ownerId = tameable.tamedToPlayerId;
+            }
+
+            if (ownerId && ownerId !== player.id) {
+                if (!isTrusted(ownerId, player.id)) {
+                    player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_not_owner"));
+                    player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                    player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                    return;
+                }
+            }
+
+            if (entity.typeId === 'minecraft:happy_ghast') {
+                if (!entity.hasTag("harness")) {
+                    player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_no_harness"));
+                    player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                    player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                    return;
+                }
+            } else {
+                const isSaddled = entity.getComponent('minecraft:is_saddled');
+                const equippable = entity.getComponent('minecraft:equippable');
+                const saddleItem = equippable ? equippable.getEquipment('Saddle') : null;
+                let hasSaddle = false;
+                if (isSaddled) hasSaddle = true;
+                if (saddleItem) hasSaddle = true;
+                if (entity.getComponent('minecraft:is_saddled')) hasSaddle = true;
+
+                if (entity.typeId !== 'minecraft:nautilus' && !hasSaddle) {
+                    player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_no_saddle"));
+                    player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                    player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                    return;
+                }
+            }
+
+            const health = entity.getComponent("minecraft:health");
+            if (!health) {
+                player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_no_health"));
+                player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                return;
+            }
+            if (health.currentValue > MAX_HEALTH) {
+                player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_too_much_health"));
+                player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                return;
+            }
+
+            const inventory = getMobs(player, 'mount_inventory');
+            if (inventory.length >= MAX_INVENTORY) {
+                player.onScreenDisplay.setActionBar(translateForPlayer(player, "capture_fail_full"));
+                player.runCommand("particle minecraft:trial_spawner_detection ~ ~1 ~");
+                player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+                return;
+            }
+
+
+            const structureName = `capture_${player.name}_${Date.now()}`;
+            player.runCommand(`particle minecraft:trial_spawner_detection ${entity.location.x} ${entity.location.y} ${entity.location.z}`);
+            player.playSound("beacon.deactivate", { pitch: 2, volume: 1.0 });
+            player.runCommand(`structure save "${structureName}" ${entity.location.x} ${entity.location.y} ${entity.location.z} ${entity.location.x} ${entity.location.y} ${entity.location.z} true disk false`);
+            const customName = entity.nameTag?.trim() || null;
+
+            inventory.push({
+                structureName,
+                entityType: entity.typeId,
+                entityName: entity.typeId.split(":")[1],
+                health: health.currentValue,
+                customName,
+                ownerId: ownerId
+            });
+            saveMobs(player, 'mount_inventory', inventory);
+
+            inv.setItem(player.selectedSlotIndex, item);
+
+            player.startItemCooldown("catcher_cooldown", 20);
+
+            entity.remove();
+        } catch (e) {
+            player.sendMessage("§cCapture Error: " + e);
+            console.warn("Capture Error: " + e);
+        } finally {
+            player.capture_lock = false;
+        }
+    });
+});
+
+// --- LIBERAR MOB Y FORMULARIO DE IDIOMA ---
+const activeFormPlayers = new Set();
+
+world.beforeEvents.playerInteractWithBlock.subscribe(ev => {
+    const { block, player, itemStack } = ev;
+    // Auto Catcher should NOT trigger here (Item Use only)
+    if (!itemStack || itemStack.typeId !== CATCHER_ID) return;
+
+
+
+
+    const equipmentSlot = player.selectedSlotIndex;
+
+    // --- FORMULARIO DE CONFIGURACIÓN ---
+    if (player.isSneaking) {
+        ev.cancel = true;
+        system.run(() => {
+            openMainSettings(player);
+        });
+        return;
+    }
+
+    // --- LIBERAR MOB ---
+    if (player.getItemCooldown("catcher_cooldown") > 0) {
+        ev.cancel = true;
+        return;
+    }
+
+    if (isPlayerRiding(player)) {
+        player.onScreenDisplay.setActionBar(translateForPlayer(player, "release_fail_riding"));
+        ev.cancel = true;
+        return;
+    }
+
+    if (player['last_interact_tick'] === system.currentTick) {
+        ev.cancel = true;
+        return;
+    }
+    player['last_interact_tick'] = system.currentTick;
+
+    ev.cancel = true;
+
+    // Try Auto-Ride Release first (if enabled)
+    // Actually, the original logic handles auto-ride release inside the system.run
+    // But we can use our helper for consistency?
+    // The original logic also handles the Form if inventory > 1.
+    // Our helper releases the FIRST mob immediately.
+    // If Auto-Ride is ON, do we skip the form?
+    // "when autoride is enabled... release a mob... spawned at player location"
+    // Implies immediate release.
+    // Let's check if we should use the helper.
+
+
+
+    system.run(() => {
+        const inventory = getMobs(player, 'mount_inventory');
+
+        if (inventory.length === 0) {
+            player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+            return;
+        }
+
+        player.startItemCooldown("catcher_cooldown", 20);
+
+        if (inventory.length === 1) {
+            const mob = inventory.shift();
+            saveMobs(player, 'mount_inventory', inventory);
+
+            const autoRide = playerAutoRide.get(player.id) || false;
+            const spawnLoc = autoRide ? player.location : block.location;
+            spawnMob(player, mob, spawnLoc, autoRide);
+        } else {
+            openMobsMenu(player, block.location);
+        }
+    });
+});
+
+function openMobsMenu(player, blockLocation = null) {
+    const inventory = getMobs(player, 'mount_inventory');
+    const form = new ActionFormData()
+        .title(translateForPlayer(player, "form_title"))
+        .body(translateForPlayer(player, "form_body", inventory.length.toString(), MAX_INVENTORY.toString()));
+
+    const reversedInventory = [...inventory].reverse();
+
+    reversedInventory.forEach((mob, i) => {
+        const name = getNameFromCaptured(mob);
+        // Remove 'minecraft:' prefix and use as texture name
+        const textureName = mob.entityType.replace("minecraft:", "");
+        const iconTexture = `textures/ui/${textureName}`;
+        form.button(`[ ${name} ]\n§4HP: ${Math.floor(mob.health)}`, iconTexture);
+    });
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+
+        const originalIndex = inventory.length - 1 - res.selection;
+        const mob = inventory[originalIndex];
+        inventory.splice(originalIndex, 1);
+        saveMobs(player, 'mount_inventory', inventory);
+
+        const autoRide = playerAutoRide.get(player.id) || false;
+        // If blockLocation is null (Auto Catcher), default to player location
+        // If Auto-Ride is ON, always player location
+        const spawnLoc = (autoRide || !blockLocation) ? player.location : blockLocation;
+        // If blockLocation is null, force ride (Auto Catcher behavior)
+        const shouldRide = autoRide || !blockLocation;
+
+        spawnMob(player, mob, spawnLoc, shouldRide);
+    });
+}
+
+
+
+// --- MID-AIR RELEASE & RESCUE ---
+
+
+// --- MID-AIR RELEASE & RESCUE (Item Use) ---
+// Using itemStartUse because Catcher Auto is a food item
+
+
+function openMainSettings(player) {
+    if (activeFormPlayers.has(player.id)) return;
+    activeFormPlayers.add(player.id);
+
+    const lang = getPlayerLanguage(player);
+
+    const form = new ActionFormData()
+        .title(TRANSLATIONS[lang].settings_title)
+        .body(TRANSLATIONS[lang].settings_body)
+        .button(TRANSLATIONS[lang].setting_manage_mobs, "textures/items/saddle")
+        .button(TRANSLATIONS[lang].setting_storage, "textures/blocks/chest_front")
+        .button(TRANSLATIONS[lang].setting_parameters, "textures/items/comparator")
+        .button(TRANSLATIONS[lang].setting_manage_trust, "textures/items/paper");
+
+    form.show(player).then(res => {
+        activeFormPlayers.delete(player.id);
+        if (res.canceled || res.selection === null) return;
+
+        if (res.selection === 0) {
+            // Manage Mobs (Inventory)
+            showManageMobsForm(player, 'mount_inventory');
+        } else if (res.selection === 1) {
+            // Storage
+            showManageMobsForm(player, 'mount_storage');
+        } else if (res.selection === 2) {
+            // Parameters
+            showParametersForm(player);
+        } else if (res.selection === 3) {
+            // Manage Trust
+            showManageTrustForm(player);
+        }
+    }).catch(() => {
+        activeFormPlayers.delete(player.id);
+    });
+}
+
+// --- RIDING PERMISSION CHECK (Separate Handler) ---
+world.beforeEvents.playerInteractWithEntity.subscribe(ev => {
+    const { player, target: entity } = ev;
+    const rideable = entity.getComponent("minecraft:rideable");
+    if (!rideable) return;
+
+    const ownerId = entity.getDynamicProperty("mount_owner");
+
+    if (ownerId) {
+        if (ownerId === player.id || isTrusted(ownerId, player.id)) {
+            // Allow riding
+        } else {
+            player.onScreenDisplay.setActionBar(translateForPlayer(player, "ride_fail_not_trusted"));
+            player.playSound("beacon.deactivate", { pitch: 0.8, volume: 1.0 });
+            ev.cancel = true;
+        }
+    }
+});
+
+
+function spawnMob(player, mob, location, forceRide = false) {
+    try {
+        player.runCommand(`structure load "${mob.structureName}" ${location.x} ${location.y + 1} ${location.z}`);
+        player.runCommand(`structure delete "${mob.structureName}"`);
+    } catch (e) {
+        player.sendMessage("§cError spawning mob: " + e);
+
+    }
+
+    system.runTimeout(() => {
+        const spawnLocation = {
+            x: location.x,
+            y: location.y,
+            z: location.z
+        };
+
+
+        player.runCommand(`particle minecraft:sonic_explosion ${spawnLocation.x} ${spawnLocation.y} ${spawnLocation.z}`);
+        player.runCommand(`particle minecraft:trial_spawner_detection_ominous ${spawnLocation.x} ${spawnLocation.y} ${spawnLocation.z}`);
+        player.playSound("beacon.activate", { pitch: 2.0, volume: 1.0 });
+
+        // Restore Owner
+        const dimension = player.dimension;
+        const entities = dimension.getEntities({
+            location: spawnLocation,
+            maxDistance: 2.0,
+            type: mob.entityType
+        });
+
+        if (entities.length > 0) {
+            const spawnedMob = entities[0];
+            if (mob.ownerId) {
+                spawnedMob.setDynamicProperty('mount_owner', mob.ownerId);
+                // Add Resistance Effect
+                spawnedMob.addEffect("resistance", 9999999, { amplifier: 255, showParticles: true });
+            }
+
+            // Auto-Ride Logic
+            if (forceRide || playerAutoRide.get(player.id)) {
+                // Add delay to ensure entity is fully loaded/spawned for riding
+                // Retry logic for reliability
+                const tryRide = (attempts = 0) => {
+                    if (attempts > 5) return;
+                    system.runTimeout(() => {
+                        if (!spawnedMob.isValid()) return;
+
+                        const rideable = spawnedMob.getComponent("minecraft:rideable");
+                        if (rideable) {
+                            const success = rideable.addRider(player);
+                            if (!success) tryRide(attempts + 1);
+                        } else {
+                            tryRide(attempts + 1);
+                        }
+                    }, 4 + (attempts * 2)); // Increasing delay
+                };
+                tryRide();
+            }
+        } else {
+
+        }
+    }, 1);
+}
+
+function showLanguageForm(player, returnTo = 'main') {
+    const lang = getPlayerLanguage(player);
+    const form = new ActionFormData()
+        .title(TRANSLATIONS[lang].lang_select_title)
+        .body(TRANSLATIONS[lang].lang_select_body)
+        .button(TRANSLATIONS[lang].lang_option_en)
+        .button(TRANSLATIONS[lang].lang_option_es);
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) {
+            if (returnTo === 'parameters') showParametersForm(player);
+            else openMainSettings(player);
+            return;
+        }
+        const selectedLang = res.selection === 0 ? "en" : "es";
+        playerLanguages.set(player.id, selectedLang);
+        player.sendMessage(TRANSLATIONS[selectedLang][selectedLang === "en" ? "lang_set_en" : "lang_set_es"]);
+
+        if (returnTo === 'parameters') showParametersForm(player);
+        else openMainSettings(player);
+    });
+}
+
+function showTrustInvitationsForm(player) {
+    const data = getPlayerPendingData(player.id);
+    const invites = data.gifts || [];
+
+    const form = new ActionFormData()
+        .title("Social Invitations")
+        .body(invites.length === 0 ? "No pending invitations." : "Select an invitation to accept or deny.");
+
+    invites.forEach(invite => {
+        if (invite.type === 'gift') {
+            form.button(`Gift: ${getNameFromCaptured(invite.mob)} from ${invite.senderName}`);
+        } else {
+            form.button(`Social Invite from ${invite.senderName}`);
+        }
+    });
+
+    form.button(translateForPlayer(player, "btn_back"), "textures/items/ender_pearl");
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+
+        if (res.selection === invites.length) {
+            showManageTrustForm(player);
+            return;
+        }
+
+        const inviteIndex = res.selection;
+        const invite = invites[inviteIndex];
+
+        // Check if already has trusted (ONLY for trust invites)
+        if (invite.type === 'trust') {
+            const trusted = getTrusted(player.id);
+            if (trusted.length > 0) {
+                player.sendMessage("§cYou cannot accept social invitations while you have trusted players.");
+                showTrustInviteActionForm(player, invite, inviteIndex, false);
+            } else {
+                showTrustInviteActionForm(player, invite, inviteIndex, true);
+            }
+        } else {
+            // Gifts can always be accepted (storage check inside action)
+            showTrustInviteActionForm(player, invite, inviteIndex, true);
+        }
+    });
+}
+
+function showTrustInviteActionForm(player, invite, index, canAccept) {
+    const isGift = invite.type === 'gift';
+    const titleKey = isGift ? "gift_invite_title" : "trust_invite_title";
+    const bodyKey = isGift ? "gift_invite_body" : "trust_invite_body";
+
+    let bodyText = "";
+    if (isGift) {
+        bodyText = translateForPlayer(player, bodyKey, invite.senderName, getNameFromCaptured(invite.mob));
+    } else {
+        bodyText = translateForPlayer(player, bodyKey, invite.senderName);
+    }
+
+    const form = new MessageFormData()
+        .title(translateForPlayer(player, titleKey))
+        .body(bodyText)
+        .button1("Deny")
+        .button2(canAccept ? "Accept" : "§cAccept (Locked)");
+
+    form.show(player).then(res => {
+        const sender = world.getAllPlayers().find(p => p.id === invite.senderId);
+        const data = getPlayerPendingData(player.id);
+        const invites = data.gifts || [];
+
+        if (res.selection === 1 && canAccept) { // Button 2 (Accept)
+            // ACCEPT LOGIC
+            if (isGift) {
+                const storage = getMobs(player, 'mount_storage');
+                if (storage.length >= MAX_STORAGE) {
+                    if (sender) {
+                        refundMelonSlices(sender, invite.cost);
+                        sender.sendMessage(translateForPlayer(sender, "gift_denied_sender", player.name) + " (Storage Full)");
+                        const senderStorage = getMobs(sender, 'mount_storage');
+                        senderStorage.push(invite.mob);
+                        saveMobs(sender, 'mount_storage', senderStorage);
+                    } else {
+                        addPendingGift(invite.senderId, {
+                            type: 'gift',
+                            senderId: player.id,
+                            senderName: player.name,
+                            mob: invite.mob,
+                            cost: 0 // Refunded
+                        });
+                    }
+                    // Remove invite
+                    invites.splice(index, 1);
+                    data.gifts = invites;
+                    savePlayerPendingData(player.id, data);
+                    showTrustInvitationsForm(player);
+                    return;
+                }
+                invite.mob.ownerId = player.id;
+                storage.push(invite.mob);
+                saveMobs(player, 'mount_storage', storage);
+                player.sendMessage(translateForPlayer(player, "gift_accepted_recipient"));
+                if (sender) sender.sendMessage(translateForPlayer(sender, "gift_accepted_sender", player.name));
+            } else {
+                // Trust
+                addTrusted(player.id, invite.senderId);
+                addTrusted(invite.senderId, player.id);
+                player.sendMessage(translateForPlayer(player, "trust_accepted_recipient", invite.senderName));
+                if (sender) sender.sendMessage(translateForPlayer(sender, "trust_accepted_sender", player.name));
+            }
+
+            // Remove invite
+            invites.splice(index, 1);
+            data.gifts = invites;
+            savePlayerPendingData(player.id, data);
+            showTrustInvitationsForm(player);
+
+        } else if (res.selection === 0) { // Button 1 (Deny)
+            // DENY LOGIC
+            if (sender) {
+                refundMelonSlices(sender, invite.cost);
+                if (isGift) {
+                    sender.sendMessage(translateForPlayer(sender, "gift_denied_sender", player.name));
+                    const senderStorage = getMobs(sender, 'mount_storage');
+                    if (senderStorage.length < MAX_STORAGE) {
+                        senderStorage.push(invite.mob);
+                        saveMobs(sender, 'mount_storage', senderStorage);
+                    } else {
+                        // Overflow handling
+                        sender.sendMessage("§eWarning: Storage overfilled due to returned gift.");
+                        senderStorage.push(invite.mob);
+                        saveMobs(sender, 'mount_storage', senderStorage);
+                    }
+                } else {
+                    sender.sendMessage(translateForPlayer(sender, "trust_denied_sender", player.name));
+                }
+            } else {
+                // Sender offline, return to their pending gifts
+                if (isGift) {
+                    addPendingGift(invite.senderId, {
+                        type: 'gift',
+                        senderId: player.id,
+                        senderName: player.name,
+                        mob: invite.mob,
+                        cost: 0 // Refunded
+                    });
+                }
+            }
+            player.sendMessage(translateForPlayer(player, isGift ? "gift_denied_recipient" : "trust_denied_recipient"));
+
+            // Remove invite
+            invites.splice(index, 1);
+            data.gifts = invites;
+            savePlayerPendingData(player.id, data);
+            showTrustInvitationsForm(player);
+        } else {
+            // Back or Locked Accept
+            showTrustInvitationsForm(player);
+        }
+    });
+}
+
+function showManageMobsForm(player, type) {
+    const mobs = getMobs(player, type);
+    const title = type === 'mount_inventory' ? translateForPlayer(player, "manage_title") : translateForPlayer(player, "storage_title");
+    const body = type === 'mount_inventory' ? translateForPlayer(player, "manage_body") : translateForPlayer(player, "storage_body", mobs.length.toString(), MAX_STORAGE.toString());
+
+    const form = new ActionFormData()
+        .title(title)
+        .body(body);
+
+    mobs.forEach((mob, index) => {
+        const name = getNameFromCaptured(mob);
+        const textureName = mob.entityType.replace("minecraft:", "");
+        const iconTexture = `textures/ui/${textureName}`;
+        form.button(`[ ${name} ]\nHP: ${Math.floor(mob.health)}`, iconTexture);
+    });
+
+    form.button(translateForPlayer(player, "btn_back"), "textures/items/ender_pearl");
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+
+        if (res.selection === mobs.length) {
+            openMainSettings(player);
+            return;
+        }
+
+        showMobDetailsForm(player, mobs[res.selection], res.selection, type);
+    });
+}
+
+function showMobDetailsForm(player, mob, index, type) {
+    const lang = getPlayerLanguage(player);
+    const ownerName = mob.ownerId ? (mob.ownerId === player.id ? translateForPlayer(player, "owner_self") : translateForPlayer(player, "owner_entrusted")) : translateForPlayer(player, "owner_none");
+
+    const form = new ActionFormData()
+        .title(translateForPlayer(player, "mob_details_title"))
+        .body(translateForPlayer(player, "mob_details_body", getNameFromCaptured(mob), Math.floor(mob.health).toString(), ownerName));
+
+    // Button 0: Tame / Gift / Give Back
+    if (!mob.ownerId) {
+        form.button(translateForPlayer(player, "btn_tame_self"), "textures/items/apple_golden");
+    } else {
+        if (mob.ownerId !== player.id) {
+            form.button(translateForPlayer(player, "btn_give_back"), "textures/items/iron_horse_armor");
+        } else {
+            form.button(translateForPlayer(player, "btn_gift"), "textures/items/diamond_horse_armor");
+        }
+    }
+
+    // Button 1: Storage/Retrieve
+    if (type === 'mount_inventory') {
+        form.button(translateForPlayer(player, "btn_send_storage"), "textures/blocks/chest_front");
+    } else {
+        form.button(translateForPlayer(player, "btn_retrieve"), "textures/items/saddle");
+    }
+
+    form.button(translateForPlayer(player, "btn_back"), "textures/items/ender_pearl");
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+
+        let action = "";
+        // Determine action based on buttons shown
+        if (!mob.ownerId) {
+            // Button 0: Tame
+            if (res.selection === 0) action = "tame";
+            else if (res.selection === 1) action = type === 'mount_inventory' ? "store" : "retrieve";
+            else action = "back";
+        } else {
+            // Button 0: Gift / Give Back
+            if (res.selection === 0) {
+                if (mob.ownerId !== player.id) action = "give_back";
+                else action = "gift";
+            } else if (res.selection === 1) {
+                action = type === 'mount_inventory' ? "store" : "retrieve";
+            } else {
+                action = "back";
+            }
+        }
+
+        if (action === "back") {
+            showManageMobsForm(player, type);
+            return;
+        }
+
+        if (action === "tame") {
+            if (consumeMelonSlices(player, 20)) {
+                mob.ownerId = player.id;
+                const mobs = getMobs(player, type);
+                mobs[index] = mob;
+                saveMobs(player, type, mobs);
+
+                player.playSound("random.orb");
+                player.onScreenDisplay.setActionBar(translateForPlayer(player, "tame_success"));
+                showMobDetailsForm(player, mob, index, type);
+            } else {
+                player.playSound("note.bass");
+                player.sendMessage(translateForPlayer(player, "tame_fail_cost"));
+                showMobDetailsForm(player, mob, index, type);
+            }
+        } else if (action === "gift") {
+            showGiftPlayerSelectForm(player, mob, index, type);
+        } else if (action === "give_back") {
+            const owner = world.getAllPlayers().find(p => p.id === mob.ownerId);
+            if (owner) {
+                sendGift(player, owner, mob, index, type, true);
+            } else {
+                // Return to offline owner
+                const cost = 0;
+                const mobs = getMobs(player, type);
+                mobs.splice(index, 1);
+                saveMobs(player, type, mobs);
+
+                addPendingGift(mob.ownerId, {
+                    type: 'gift',
+                    senderId: player.id,
+                    senderName: player.name,
+                    mob: mob,
+                    cost: cost
+                });
+
+                player.playSound("random.orb");
+                player.onScreenDisplay.setActionBar(translateForPlayer(player, "gift_sent", "Offline Owner"));
+                showManageMobsForm(player, type);
+            }
+        } else if (action === "store") {
+            const storage = getMobs(player, 'mount_storage');
+            if (storage.length >= MAX_STORAGE) {
+                player.sendMessage(translateForPlayer(player, "storage_full"));
+                showMobDetailsForm(player, mob, index, type);
+                return;
+            }
+            const inventory = getMobs(player, 'mount_inventory');
+            inventory.splice(index, 1);
+            storage.push(mob);
+            saveMobs(player, 'mount_inventory', inventory);
+            saveMobs(player, 'mount_storage', storage);
+            player.playSound("armor.equip_chain");
+            player.sendMessage(translateForPlayer(player, "move_success"));
+            showManageMobsForm(player, 'mount_inventory');
+        } else if (action === "retrieve") {
+            const inventory = getMobs(player, 'mount_inventory');
+            if (inventory.length >= MAX_INVENTORY) {
+                player.sendMessage(translateForPlayer(player, "inventory_full"));
+                showMobDetailsForm(player, mob, index, type);
+                return;
+            }
+            const storage = getMobs(player, 'mount_storage');
+            storage.splice(index, 1);
+            inventory.push(mob);
+            saveMobs(player, 'mount_storage', storage);
+            saveMobs(player, 'mount_inventory', inventory);
+            player.playSound("armor.equip_chain");
+            player.sendMessage(translateForPlayer(player, "move_success"));
+            showManageMobsForm(player, 'mount_storage');
+        }
+    });
+}
+
+function showGiftPlayerSelectForm(player, mob, index, type) {
+    const players = world.getPlayers().filter(p => p.id !== player.id);
+    const form = new ActionFormData()
+        .title(translateForPlayer(player, "gift_title"))
+        .body(translateForPlayer(player, "gift_body"));
+
+    players.forEach(p => {
+        form.button(p.name);
+    });
+
+    form.button(translateForPlayer(player, "btn_back"));
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+        if (res.selection === players.length) {
+            showMobDetailsForm(player, mob, index, type);
+            return;
+        }
+
+        const target = players[res.selection];
+        sendGift(player, target, mob, index, type);
+    });
+}
+
+function sendGift(player, target, mob, index, type, isReturn = false) {
+    const cost = isReturn ? 0 : 20;
+    if (!isReturn && !consumeMelonSlices(player, cost)) {
+        player.sendMessage(translateForPlayer(player, "tame_fail_cost"));
+        return;
+    }
+
+    const mobs = getMobs(player, type);
+    mobs.splice(index, 1);
+    saveMobs(player, type, mobs);
+
+    addPendingGift(target.id, {
+        type: 'gift',
+        senderId: player.id,
+        senderName: player.name,
+        mob: mob,
+        cost: cost
+    });
+
+    player.playSound("random.orb");
+    player.onScreenDisplay.setActionBar(translateForPlayer(player, "gift_sent", target.name));
+    target.sendMessage(translateForPlayer(target, "gift_invite_body", player.name, getNameFromCaptured(mob)));
+
+    showManageMobsForm(player, type);
+}
+
+function showParametersForm(player) {
+    const lang = getPlayerLanguage(player);
+    const autoRide = playerAutoRide.get(player.id) || false;
+
+    const form = new ActionFormData()
+        .title(TRANSLATIONS[lang].parameters_title)
+        .body(TRANSLATIONS[lang].parameters_body)
+        .button(autoRide ? TRANSLATIONS[lang].setting_auto_ride_on : TRANSLATIONS[lang].setting_auto_ride_off, "textures/items/saddle")
+        .button(TRANSLATIONS[lang].setting_language, "textures/items/book_writable")
+        .button(TRANSLATIONS[lang].btn_back, "textures/items/ender_pearl");
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+
+        if (res.selection === 0) {
+            playerAutoRide.set(player.id, !autoRide);
+            showParametersForm(player);
+        } else if (res.selection === 1) {
+            showLanguageForm(player, 'parameters');
+        } else {
+            openMainSettings(player);
+        }
+    });
+}
+
+function showManageTrustForm(player) {
+    const lang = getPlayerLanguage(player);
+    const trustedIds = getTrusted(player.id);
+    const data = getPlayerPendingData(player.id);
+    const invites = data.gifts || [];
+
+    const form = new ActionFormData()
+        .title(TRANSLATIONS[lang].trust_title)
+        .body(TRANSLATIONS[lang].trust_body)
+        .button(TRANSLATIONS[lang].trust_add, "textures/items/emerald")
+        .button(TRANSLATIONS[lang].invitations_btn.replace("%s", invites.length), "textures/items/paper");
+
+    const allPlayers = world.getAllPlayers();
+
+    trustedIds.forEach(id => {
+        const p = allPlayers.find(pl => pl.id === id);
+        const name = p ? p.name : `Offline: ${id.substring(0, 8)}...`;
+        form.button(`Remove: ${name}`, "textures/ui/cancel");
+    });
+
+    form.button(TRANSLATIONS[lang].btn_back, "textures/items/ender_pearl");
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+
+        if (res.selection === 0) {
+            showAddTrustedForm(player);
+        } else if (res.selection === 1) {
+            showTrustInvitationsForm(player);
+        } else if (res.selection === trustedIds.length + 2) {
+            openMainSettings(player);
+        } else {
+            const index = res.selection - 2;
+            if (index >= 0 && index < trustedIds.length) {
+                const targetId = trustedIds[index];
+                showRemoveTrustConfirmForm(player, targetId);
+            }
+        }
+    });
+}
+
+function showAddTrustedForm(player) {
+    const players = world.getPlayers().filter(p => p.id !== player.id && !isTrusted(player.id, p.id));
+    const form = new ActionFormData()
+        .title("Add Trusted Player")
+        .body("Select a player to send a trust invitation (Cost: 128 Slices).");
+
+    players.forEach(p => {
+        form.button(p.name);
+    });
+
+    form.button("Back");
+
+    form.show(player).then(res => {
+        if (res.canceled || res.selection === null) return;
+        if (res.selection === players.length) {
+            showManageTrustForm(player);
+            return;
+        }
+
+        const target = players[res.selection];
+
+        if (!consumeMelonSlices(player, 128)) {
+            player.sendMessage(translateForPlayer(player, "trust_fail_cost"));
+            return;
+        }
+
+        addPendingGift(target.id, {
+            type: 'trust',
+            senderId: player.id,
+            senderName: player.name,
+            cost: 128
+        });
+
+        player.sendMessage(translateForPlayer(player, "trust_invite_sent", target.name));
+        target.sendMessage(translateForPlayer(target, "trust_invite_body", player.name));
+
+        showManageTrustForm(player);
+    });
+}
+
+function showRemoveTrustConfirmForm(player, targetId) {
+    const target = world.getAllPlayers().find(p => p.id === targetId);
+    const name = target ? target.name : "Offline Player";
+
+    const form = new MessageFormData()
+        .title(translateForPlayer(player, "trust_remove_confirm_title"))
+        .body(translateForPlayer(player, "trust_remove_confirm_body", name))
+        .button1("Cancel")
+        .button2("Remove");
+
+    form.show(player).then(res => {
+        if (res.selection === 1) {
+            // 1. Remove Trust Bidirectionally
+            removeTrusted(player.id, targetId);
+            removeTrusted(targetId, player.id);
+
+            // 2. Return Mobs (Our side)
+            returnOwnedMobs(player, targetId);
+
+            // 3. Return Mobs (Their side)
+            if (target) {
+                // If online, force return immediately
+                returnOwnedMobs(target, player.id);
+                target.sendMessage(`§eTrust removed by ${player.name}. Your mobs have been returned.`);
+            } else {
+                // If offline, schedule return
+                addPendingBreak(targetId, player.id);
+            }
+
+            player.sendMessage(translateForPlayer(player, "trust_removed"));
+            showManageTrustForm(player);
+        } else {
+            showManageTrustForm(player);
+        }
+    });
+}
+

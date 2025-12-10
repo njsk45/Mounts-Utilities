@@ -1,0 +1,72 @@
+{
+	"format_version": 2,
+	"metadata": {
+		"authors": [
+			"Arzeuk"
+		],
+		"generated_with": {
+			"bridge": [
+				"2.7.45"
+			],
+			"dash": [
+				"0.11.7"
+			]
+		},
+		"product_type": "addon"
+	},
+	"header": {
+		"name": "Mounts Complement 3.0",
+		"description": "",
+		"min_engine_version": [
+			1,
+			21,
+			70
+		],
+		"uuid": "aef7f10f-e4eb-4b0b-bd64-5874c8d15b17",
+		"version": [
+			1,
+			3,
+			0
+		]
+	},
+	"modules": [
+		{
+			"type": "data",
+			"uuid": "38b1e163-81ed-4926-b0e5-1149515fd9ba",
+			"version": [
+				1,
+				3,
+				0
+			]
+		},
+		{
+			"type": "script",
+			"language": "javascript",
+			"entry": "scripts/main.js",
+			"version": [
+				1,
+				3,
+				0
+			],
+			"uuid": "3a6070e2-9ed7-4c55-8a4d-abd533359510"
+		}
+	],
+	"dependencies": [
+		{
+			"uuid": "4d0eab3c-1c78-481e-b1a6-b53819723c6b",
+			"version": [
+				1,
+				3,
+				0
+			]
+		},
+		{
+			"module_name": "@minecraft/server",
+			"version": "1.11.0"
+		},
+		{
+			"module_name": "@minecraft/server-ui",
+			"version": "1.1.0"
+		}
+	]
+}

@@ -1,0 +1,10 @@
+{
+	"texture_data": {
+		"purple_orb": {
+			"textures": "textures/items/purple_orb.png"
+		},
+		"blue_orb": {
+			"textures": "textures/items/blue_orb.png"
+		}
+	}
+}
