@@ -1,4 +1,5 @@
 import { world, system, ItemStack } from '@minecraft/server';
+import * as Utils from './utils';
 
 const ALLOWED_ENTITIES = [
     'minecraft:horse',
@@ -20,7 +21,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
     const { player, itemStack, target: entity } = ev;
 
     if (!itemStack || itemStack.typeId !== 'minecraft:glistering_melon_slice') return;
-    player.sendMessage(`Debug: Taming Check - Entity: ${entity.typeId}`);
+    //player.sendMessage(`Debug: Taming Check - Entity: ${entity.typeId}`);
     if (!ALLOWED_ENTITIES.includes(entity.typeId)) return;
 
     // Check if already tamed by this script
@@ -50,7 +51,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
         player.sendMessage(`Debug: Total Slices: ${totalSlices}`);
 
         if (totalSlices < 20) {
-            player.onScreenDisplay.setActionBar("§cYou need 20 Glistering Melon Slices to tame this mob!");
+            player.onScreenDisplay.setActionBar(Utils.translateForPlayer(player, "tame_fail_melon_count"));
             ev.cancel = true;
             return;
         }
@@ -74,7 +75,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
         // Effects
         player.runCommand(`particle minecraft:heart_particle ${entity.location.x} ${entity.location.y + 1} ${entity.location.z}`);
         player.playSound('random.orb', { pitch: 1.0, volume: 1.0 });
-        player.onScreenDisplay.setActionBar("§aYou have tamed this mount!");
+        player.onScreenDisplay.setActionBar(Utils.translateForPlayer(player, "tame_success_generic"));
 
         // Consume items (if not creative)
         const gameMode = player.getGameMode();

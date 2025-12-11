@@ -15,7 +15,7 @@
 		"product_type": "addon"
 	},
 	"header": {
-		"name": "Mounts Complement 3.0",
+		"name": "Mounts Utilities",
 		"description": "",
 		"min_engine_version": [
 			1,
@@ -25,7 +25,7 @@
 		"uuid": "aef7f10f-e4eb-4b0b-bd64-5874c8d15b17",
 		"version": [
 			1,
-			3,
+			4,
 			0
 		]
 	},
@@ -35,7 +35,7 @@
 			"uuid": "38b1e163-81ed-4926-b0e5-1149515fd9ba",
 			"version": [
 				1,
-				3,
+				4,
 				0
 			]
 		},
@@ -45,7 +45,7 @@
 			"entry": "scripts/main.js",
 			"version": [
 				1,
-				3,
+				4,
 				0
 			],
 			"uuid": "3a6070e2-9ed7-4c55-8a4d-abd533359510"
@@ -56,7 +56,7 @@
 			"uuid": "4d0eab3c-1c78-481e-b1a6-b53819723c6b",
 			"version": [
 				1,
-				3,
+				4,
 				0
 			]
 		},

@@ -1,4 +1,5 @@
 import { world, system } from "@minecraft/server";
+import * as Utils from './utils';
 
 const HARNESS_COLORS = [
     "white", "orange", "magenta", "light_blue", "yellow", "lime", "pink", "gray",
@@ -23,7 +24,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
     if (color) {
         // Check if already equipped
         if (target.hasTag("harness")) {
-            player.onScreenDisplay.setActionBar("§cAlready has a harness!");
+            player.onScreenDisplay.setActionBar(Utils.translateForPlayer(player, "harness_fail_equipped"));
             return;
         }
 
@@ -53,7 +54,7 @@ world.beforeEvents.playerInteractWithEntity.subscribe((ev) => {
             }
 
             // Feedback
-            player.onScreenDisplay.setActionBar("Harness Equipped");
+            player.onScreenDisplay.setActionBar(Utils.translateForPlayer(player, "harness_equip_success"));
             player.playSound("armor.equip_leather");
         });
         return;
