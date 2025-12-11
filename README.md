@@ -8,7 +8,6 @@
 - Changelog:
   - v1.4.0: Added new features and fixed bugs.
     - Purple Orb: The "Mounts Orb" Rework:
-      - The purple orb now has a menu that allows you to catch, claim, gift, storage and boost mobs that can be a Mount.
       - The purple orb now has a cooldown.
 
     - New Item: Blue Orb:
@@ -17,8 +16,10 @@
       - The blue orb has the same menu and options as the purple orb (purple orb = mounts orb previously).
       - The blue orb has the same cooldown as the purple orb.
 
-    - Orbs Menu:
-      - Mob details (Sneak + Right Click to open):
+    - Orbs Menu (Sneak + Right Click to open menu):
+      - Parameters:
+        - Parameters now saves changes as world data.
+      - Mob details:
         - added new feature the "Release" button.
         - added new feature the "Claim" button (Actually named "Tame" in the menu).
         - added new feature the "Gift" button.
