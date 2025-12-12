@@ -1,4 +1,4 @@
-# Mounts Utilities Addon V1.4.0 (Minecraft Bedrock)
+# Mounts Utilities Addon V1.4.1 (Minecraft Bedrock)
 - This addon will able you to:
   Catch, Claim, Gift, Storage and Boost mobs that can be a Mount.
 
@@ -6,7 +6,7 @@
   - Minecraft Bedrock 1.21.0 or higher
 
 - Changelog:
-  - v1.4.0: Added new features and fixed bugs.
+  - v1.4.1: Added new features and fixed bugs.
     - Purple Orb: The "Mounts Orb" Rework:
       - The purple orb now has a cooldown.
 
@@ -26,4 +26,5 @@
       
     - General Bug Fixes:
       - Fixed bug where you can ride mobs that are tamed by another player that you are not friends with.
+      - Some times the save structure function duplicates the mobs data when there are too many mobs close to each other, this has been fixed adding a crowd check to prevent it.
     
